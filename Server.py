@@ -17,7 +17,7 @@ parser = argparse.ArgumentParser(  # initializing parser
 #Using the parser to add paramteres that can be used through command line flags
 parser.add_argument('-n', '--numOfServers', help="Number of Ports", type=int,default=5)
 parser.add_argument('-i', '--timeInterval', help="Time Interval for refresh", type=int, default=1)
-parser.add_argument('-f', '--fileName', help="File/ Directory with extension", default="Project Report.docx")
+parser.add_argument('-f', '--fileName', help="File/ Directory with extension", default="Send.mp4")
 parser.add_argument('-p', '--ListOfPorts', nargs='+', help="Port Numbers for all servers", type=int,default=[12000,13000,14000,15000,16000])
 
 args = parser.parse_args()  # command-line arguments are parsed to be stored into appropriate variables
@@ -27,33 +27,33 @@ fileName = args.fileName  # file location of video file to be sent
 ports = args.ListOfPorts  # ports list for all virtual servers to be initialized
 
 
-####supplementary functions####
-def get_range(message):  # to interpret formatted range request sent by client, sent in format 'bytes=0-1023'
-    start = int(message.split('-')[0].split('=')[1])  # to get start of range
-    end = int(message.split('-')[1]) # to get end of range
-    return start, end
-
-
-def copy_file_range(in_file, out,range_from,range_to): # Copies only the range between range_from/to.
-    in_file.seek(range_from)  # media file I/O pointer is taken to start of range request
-    bytes_to_copy = 1 + range_to - range_from   # bytes to be sent to client total, add 1 because the range is inclusive
+def File_Range_Copy(inTheFile, out,byte_range_start,byte_range_end): # Copies only the range between byte_range_start/to.
+    inTheFile.seek(byte_range_start)  # media file I/O pointer is taken to start of range request
+    bytes_to_copy = 1 + byte_range_end - byte_range_start   # bytes to be sent to client total, add 1 because the range is inclusive
     buf_length = bufferSize  # length of socket buffer a.k.a maximum number of bytes that can be sent
     bytes_copied = 0  # bytes that have been sent to client so far
     while bytes_copied < bytes_to_copy:
         # Media file is read from until required size threshold is met. Minimum between maximum buffer length and bytes left to
         # copy is taken in the event that we are near the end of the required segment, to avoid copying any excess bytes
-        read_buf = in_file.read(min(buf_length, (bytes_to_copy-bytes_copied)))
+        read_buf = inTheFile.read(min(buf_length, (bytes_to_copy-bytes_copied)))
         if len(read_buf) == 0: # if no data was received from file
             break
         out.send(read_buf)  # read bytes are sent to client socket
         bytes_copied += len(read_buf)  # read and sent bytes are added to overall counter
         time.sleep(0.1)  # delay to prevent any errors on client side
 
+"""functionality: to interpret formatted range request sent by client, sent in format 'bytes=0-1023' """
+def get_range(message):  
+    start = int(message.split('-')[0].split('=')[1])  # to get start of range
+    end = int(message.split('-')[1]) # to get end of range
+    return start, end
+
+
 
 """Actual Prcoess
 The functionality of each and every line is stated in the comments
 """
-def serverProcess(m):
+def Process_Server(m):
     global ports
     global numOfServers 
     global refresh_time 
@@ -77,10 +77,11 @@ def serverProcess(m):
             elif not message: # for blank check messages received from client e.g in checkPorts function
                 sck.close() # message is ignored, server goes back to listening
                 continue
-            range_from, range_to = get_range(message) # if range request is received. Message is decoded to get start and end of byte range request
+            byte_range_start, byte_range_end = get_range(message) # if range request is received. Message is decoded to get start and end of byte range request
             # input/output files, socket and range are inputted to function to give only required bytes from file to user
             with open(fileName,'rb') as media_file:  # input media file is opened
-                copy_file_range(media_file,sck,range_from,range_to)
+                File_Range_Copy
+            (media_file,sck,byte_range_start,byte_range_end)
             sck.close()
         except (ConnectionResetError, ConnectionRefusedError):
             sck.close()
@@ -98,7 +99,7 @@ if __name__ == "__main__":
 
     for i in range(0, numOfServers):
         # sub-process/thread for each required server is started and added to servers list
-        server_thread = multiprocessing.Process(target=serverProcess, args=(i,))
+        server_thread = multiprocessing.Process(target=Process_Server, args=(i,))
         servers.append(server_thread)
         server_thread.start()
 

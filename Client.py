@@ -5,7 +5,8 @@ import os
 import curses
 import argparse
 
-####initial inputs/global variables####
+#Declaring variables
+
 Buffer_size = 8192  # maximum number of bytes that can be transferred in one instance
 mediaSize = 0  # known size of media file, initialized
 threads = []  # array to store all client threads
@@ -14,19 +15,18 @@ totalDownloaded = 0  # total downloaded bytes from all servers combined of file
 serverSize = []  # bytes to be downloaded of file from each server
 downloadedSize = []  # bytes downloaded so far of file from each server
 
-# .............................. inputs for running the script file ........................... #
 
-# adding module description
-parser = argparse.ArgumentParser(
-    description="Client: Downloads a video file simultaneously from multiple servers by applying load division, multithreading and file segmentation/recombination."
-)
+#creating the argument parser object
+
+parser = argparse.ArgumentParser()
+
 
 # adding parameters through command-line flags
-parser.add_argument('-i', '--timeInterval', help="Time Interval for refresh", type=int, default=1)
-parser.add_argument('-o', '--outputLocation', help="File/ Directory of copied file with extension", default="new.mp4")
-parser.add_argument('-p', '--portsList', nargs='+', help="Port Numbers for all servers", type=int,default=[12000, 13000, 14000, 15000, 16000])
-parser.add_argument('-a', '--serverIP', help="IP Address of Server",default=gethostname())
-parser.add_argument('-r', '--resume', help="Resume Interrupted download or not", type=bool,default=True)
+parser.add_argument('-i', '--timeInterval', help="Time Interval for refreshing ", type=int, default=1)
+parser.add_argument('-o', '--outputLocation', help="File/ Directory of copied file with extension", default="recieved.mp4")
+parser.add_argument('-p', '--portsList', nargs='+', help="Port Numbers for all the servers", type=int,default=[12000, 13000, 14000, 15000, 16000])
+parser.add_argument('-a', '--serverIP', help="IP Address of the Server",default=gethostname())
+parser.add_argument('-r', '--resume', help="Resume Functionality to use or not", type=bool,default=True)
 
 args = parser.parse_args()  # command-line arguments are parsed to be stored into appropriate variables
 ports = args.portsList  # ports list supplied of all possible servers
@@ -64,7 +64,7 @@ def checkPorts(ports):
 
 """
 Functionailty:  formats headers in the following way: 'bytes=0-1023', where 0 is start and 1023 is end of byte range"""
-def formatHeaders(numOfServers,start,end):
+def ConsistencyFunction(numOfServers,start,end):
     headers = [] # list to store all byte requests for current instance
     if start == 0: # in event of initial segmentation in main function
         chunkSize = int(mediaSize / numOfServers) # whole file is segmented into even chunks
@@ -83,7 +83,7 @@ def formatHeaders(numOfServers,start,end):
 Functionality: Recombines all binary segments and removes them
 Returns: the original ".mp4" file
 """
-def fileRecombining():  
+def fileRecombination():  
     with open(output_location, 'wb') as newFile: # output media file opened for writing into
         for i in range(0,numOfServers):  # all segments from initial segmentation taken in required order
             file = open(f"fileRecv{i}.bin", "rb")  # required binary file opened for reading
@@ -104,16 +104,16 @@ def cleanUp():
         path_to_file = os.path.join(directory, file)
         os.remove(path_to_file)
 
-
-def curses_thread():  # threading function to ensure continuous interval-based refreshing of metrics in background
+"""threading function to ensure continuous interval-based refreshing of metrics in background"""
+def CursesThread():  
     while not end:
         screen.addstr(len(ports), 0, f'Total downloaded: {totalDownloaded}/{mediaSize} bytes')
         screen.refresh()
         curses.napms(timeInterval*100)
 
 
-####main client process####
-# takes port number for server, instance number and required byte request string/header to be sent to server as parameters
+
+"""input: port number for server, instance number and required byte request string/header to be sent to server"""
 def client_process(port_num, i,header):
     try:
         global totalDownloaded
@@ -169,7 +169,7 @@ def client_process(port_num, i,header):
                 break
         screen.addstr(len(ports) + 1, 0, f'Found! Distributing remaining load between {subNumOfServers} server(s)')
         screen.addstr(len(ports) + 2, 0, '                                                                       ')
-        subHeaders = formatHeaders(subNumOfServers,start,end)  # range requests for sub-fragments of fragment prepared for load balancing
+        subHeaders = ConsistencyFunction(subNumOfServers,start,end)  # range requests for sub-fragments of fragment prepared for load balancing
         subThreads = [] # to keep track of sub-threads within current thread
         for j in range(0,subNumOfServers): # sub-threads created and added to sub-threads list for all found live servers
             subName = str(i) + '.' + str(j + 1)  # file name for sub-fragment to be combined with main fragment
@@ -216,12 +216,12 @@ while True:  # looped until at least one live server is found
     except (ConnectionResetError,ConnectionRefusedError): # in event that connection with server is broken when retrieving size information
         continue
 
-screen.clear() # screen is cleared
-headers = formatHeaders(numOfServers,0,mediaSize) # byte request strings for initial load division prepared for each available server
+screen.clear() # Screen clearing method
+headers = ConsistencyFunction(numOfServers,0,mediaSize) # byte request strings for initial load division prepared for each available server
 for i in range(0,len(ports)): # server metric lines initialized
     screen.addstr(i, 0, f'Server {int(i)+1}:')
 screen.addstr(len(ports),0,f'Total downloaded: {totalDownloaded}/{mediaSize} bytes')
-cu = threading.Thread(target=curses_thread) # separate thread for metric screen refreshing started
+cu = threading.Thread(target=CursesThread) # separate thread for metric screen refreshing started
 cu.start()
 
 for i in range(0,numOfServers): # threads for all available servers with appropriate byte requests started
@@ -234,7 +234,7 @@ for x in threads:  # waiting for all threads to finish before file is recombined
 screen.addstr(len(ports) + 1, 0, 'File recombination in process..')
 end = True  # signaling metrics screen thread to exit
 screen.refresh()
-fileRecombining()  # fragments of file recombined into final mp4 file
+fileRecombination()  # fragments of file recombined into final mp4 file
 curses.napms(3000)
 curses.endwin()  # metrics window closed
 cleanUp()  # ran after code has been run to ensure all binary fragments have been removed
