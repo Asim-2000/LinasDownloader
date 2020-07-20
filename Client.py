@@ -92,11 +92,11 @@ def PortChecking(ports):
     return livePorts
 
 
-""" Cleanup fucntion
+""" CleanUpBins fucntion
 Functionailty: remove any existing binary file 
 returns: Clean the directory ( Removes binary files)
 """
-def cleanUp():  
+def CleanUpBins():  
     directory = './'  # current folder
     files_in_directory = os.listdir(directory) # list of all files in current folder taken
     filtered_files = [file for file in files_in_directory if file.endswith(".bin")] # files filtered out with '.bin' extension
@@ -189,7 +189,7 @@ def Process_Client(port_num, i,header):
         recv_file2.close()  # main fragment file closed
 
 
-cleanUp()  # before executing program, any existing '.bin' fragments are deleted to avoid errors
+CleanUpBins()  # before executing program, any existing '.bin' fragments are deleted to avoid errors
 screen = curses.initscr() # 'curses' library dymanic screen for metrics initialized
 curses.curs_set(0) # blinking cursor disabled
 screen.addstr(1, 0, f'Looking for available servers...') # request for updating info on screen entered into buffer queue
@@ -237,7 +237,7 @@ screen.refresh()
 fileRecombination()  # fragments of file recombined into final mp4 file
 curses.napms(3000)
 curses.endwin()  # metrics window closed
-cleanUp()  # ran after code has been run to ensure all binary fragments have been removed
+CleanUpBins()  # ran after code has been run to ensure all binary fragments have been removed
 input('The downloading process has finished. Please press Enter to exit..')
 
 
