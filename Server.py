@@ -17,7 +17,7 @@ parser = argparse.ArgumentParser(  # initializing parser
 #Using the parser to add paramteres that can be used through command line flags
 parser.add_argument('-n', '--numOfServers', help="Number of Ports", type=int,default=5)
 parser.add_argument('-i', '--timeInterval', help="Time Interval for refresh", type=int, default=1)
-parser.add_argument('-f', '--fileName', help="File/ Directory with extension", default="Rivers.mp4")
+parser.add_argument('-f', '--fileName', help="File/ Directory with extension", default="Project Report.docx")
 parser.add_argument('-p', '--ListOfPorts', nargs='+', help="Port Numbers for all servers", type=int,default=[12000,13000,14000,15000,16000])
 
 args = parser.parse_args()  # command-line arguments are parsed to be stored into appropriate variables
