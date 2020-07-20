@@ -42,26 +42,6 @@ for i in range(0, len(ports)):
     downloadedSize.append(0)
 
 
-"""Function to check all known servers
-returns : Servers that are alive
-"""
-def checkPorts(ports):  
-    while True:
-        try:
-            livePorts = []  # array to store all servers known to be working so far
-            for i in ports: # all known ports checked
-                check = socket(AF_INET,SOCK_STREAM)
-                result = check.connect_ex((serverIP,i))  # blank check message sent to each known server
-                #if the server is alive then append it to the list of live ports
-                if result == 0:  
-                    livePorts.append(i) 
-                check.close()
-                time.sleep(0.1)
-            break
-        except (ConnectionResetError,ConnectionRefusedError):
-            continue
-    return livePorts
-
 """
 Functionailty:  formats headers in the following way: 'bytes=0-1023', where 0 is start and 1023 is end of byte range"""
 def ConsistencyFunction(numOfServers,start,end):
@@ -91,6 +71,26 @@ def fileRecombination():
             file.close() # file closed
             os.remove(f"fileRecv{i}.bin") # original binary file(portion) deleted to avoid redundancies and errors
 
+"""Function to check all known servers
+returns : Servers that are alive
+"""
+def PortChecking(ports):  
+    while True:
+        try:
+            livePorts = []  # array to store all servers known to be working so far
+            for i in ports: # all known ports checked
+                check = socket(AF_INET,SOCK_STREAM)
+                result = check.connect_ex((serverIP,i))  # blank check message sent to each known server
+                #if the server is alive then append it to the list of live ports
+                if result == 0:  
+                    livePorts.append(i) 
+                check.close()
+                time.sleep(0.1)
+            break
+        except (ConnectionResetError,ConnectionRefusedError):
+            continue
+    return livePorts
+
 
 """ Cleanup fucntion
 Functionailty: remove any existing binary file 
@@ -114,7 +114,7 @@ def CursesThread():
 
 
 """input: port number for server, instance number and required byte request string/header to be sent to server"""
-def client_process(port_num, i,header):
+def Process_Client(port_num, i,header):
     try:
         global totalDownloaded
         serverNum = ports.index(port_num)  # taking note of what overall server we are receiving information from in this process for metrics
@@ -160,7 +160,7 @@ def client_process(port_num, i,header):
         recv_file.close()
         client_socket.close()
         while True: # continues until at least one server is found for recovery
-            subLivePorts = checkPorts(ports)  # current live servers are checked that can be used to recover data
+            subLivePorts = PortChecking(ports)  # current live servers are checked that can be used to recover data
             subNumOfServers = len(subLivePorts)
             if subNumOfServers == 0: # in event that no live servers are found
                 screen.addstr(len(ports) + 2, 0, 'Trying again...                  ')
@@ -173,7 +173,7 @@ def client_process(port_num, i,header):
         subThreads = [] # to keep track of sub-threads within current thread
         for j in range(0,subNumOfServers): # sub-threads created and added to sub-threads list for all found live servers
             subName = str(i) + '.' + str(j + 1)  # file name for sub-fragment to be combined with main fragment
-            new = threading.Thread(target=client_process, args=(subLivePorts[j],subName,subHeaders[j]))
+            new = threading.Thread(target=Process_Client, args=(subLivePorts[j],subName,subHeaders[j]))
             subThreads.append(new)
             new.start()
         for y in subThreads:  # after all sub-threads are completed, sub-fragments are written back in order to main segment
@@ -196,7 +196,7 @@ screen.addstr(1, 0, f'Looking for available servers...') # request for updating 
 screen.refresh() # updates are only made to screen when screen is refreshed
 while True:  # looped until at least one live server is found
     try:
-        livePorts = checkPorts(ports) # checking for live servers/ports from initial port list
+        livePorts = PortChecking(ports) # checking for live servers/ports from initial port list
         numOfServers = len(livePorts) # number of live current servers displayed
         screen.addstr(2, 0, f'{numOfServers} server(s) available.                                                       ')
         screen.refresh()
@@ -225,7 +225,7 @@ cu = threading.Thread(target=CursesThread) # separate thread for metric screen r
 cu.start()
 
 for i in range(0,numOfServers): # threads for all available servers with appropriate byte requests started
-    server_thread = threading.Thread(target=client_process, args=(livePorts[i], i,headers[i]))
+    server_thread = threading.Thread(target=Process_Client, args=(livePorts[i], i,headers[i]))
     threads.append(server_thread)
     server_thread.start()
 
