@@ -101,7 +101,7 @@ Functionailty: remove any existing binary file
 returns: Clean the directory ( Removes binary files)
 """
 def CleanUpBins():  
-    directory = './'  # current folder
+    directory = './'  # dir = current folder
     files_in_directory = os.listdir(directory) # list of all files in current folder taken
     filtered_files = [file for file in files_in_directory if file.endswith(".bin")] # files filtered out with '.bin' extension
     for file in filtered_files: # every found redundant binary file is deleted
@@ -171,10 +171,12 @@ def Process_Client(port_num, i,header):
                 continue
             else: # if at least one server is found, loop breaks
                 break
+
         screen.addstr(len(ports) + 1, 0, f'Found! Distributing remaining load between {subNumOfServers} server(s)')
         screen.addstr(len(ports) + 2, 0, '                                                                       ')
         subHeaders = ConsistencyFunction(subNumOfServers,start,end)  # range requests for sub-fragments of fragment prepared for load balancing
         subThreads = [] # to keep track of sub-threads within current thread
+
         for j in range(0,subNumOfServers): # sub-threads created and added to sub-threads list for all found live servers
             subName = str(i) + '.' + str(j + 1)  # file name for sub-segment to be combined with main fragment
             new = threading.Thread(target=Process_Client, args=(subLivePorts[j],subName,subHeaders[j]))
@@ -182,15 +184,19 @@ def Process_Client(port_num, i,header):
             new.start()
         for y in subThreads:  # after all sub-threads are completed, sub-fragments are written back in order to main segment
             y.join()
+
         file_recieve_2 = open(f"fileRecv{i}.bin", "ab") # main fragment '.bin' file is opened
         file_recieve_2.seek(start)  # I/O pointer is sent to point where new information is to be written from
+
         for j in range(0,subNumOfServers): # all available sub-fragments for current instance are to be considered
             screen.addstr(len(ports) + 1, 0, 'Downloading and recombining fragments...                                               ')
             subName = str(i) + '.' + str(j + 1)  # file name for sub-fragment to be combined with main fragment
             subFile = open(f"fileRecv{subName}.bin", "rb") # sub-fragment file opened
             file_recieve_2.write(subFile.read()) # sub-fragment contents written into main fragment file
             subFile.close()  # sub-fragment file closed and deleted to avoid redundancies
+
         file_recieve_2.close()  # main fragment file closed
+
 
 
 CleanUpBins()  # before executing program, any existing '.bin' fragments are deleted to avoid errors
