@@ -17,14 +17,14 @@ parser = argparse.ArgumentParser(  # initializing parser
 #Using the parser to add paramteres that can be used through command line flags
 parser.add_argument('-n', '--numOfServers', help="Number of Ports", type=int,default=5)
 parser.add_argument('-i', '--timeInterval', help="Time Interval for refresh", type=int, default=1)
-parser.add_argument('-f', '--file', help="File/ Directory with extension", default="Rivers.mp4")
+parser.add_argument('-f', '--fileName', help="File/ Directory with extension", default="Rivers.mp4")
 parser.add_argument('-p', '--ListOfPorts', nargs='+', help="Port Numbers for all servers", type=int,default=[12000,13000,14000,15000,16000])
 
 args = parser.parse_args()  # command-line arguments are parsed to be stored into appropriate variables
-numOfServers = args.numServers  # number of virtual servers to be initialized
+numOfServers = args.numOfServers  # number of virtual servers to be initialized
 refresh_time = args.timeInterval  # time interval in seconds after which metrics screen is to be updated
 fileName = args.fileName  # file location of video file to be sent
-ports = args.portsList  # ports list for all virtual servers to be initialized
+ports = args.ListOfPorts  # ports list for all virtual servers to be initialized
 
 
 ####supplementary functions####
@@ -51,7 +51,7 @@ def copy_file_range(in_file, out,range_from,range_to): # Copies only the range b
 
 
 """Actual Prcoess
-The functionality of each and every line is stated in comments
+The functionality of each and every line is stated in the comments
 """
 def serverProcess(m):
     global ports
@@ -91,11 +91,11 @@ def serverProcess(m):
 if __name__ == "__main__":
     servers = []  # list to store and keep track of all server processes
     thread_input = ''  # used to kill servers with required command
-    print('Starting servers...')
+    print('Starting servers. Please wait....')
 
     server_status = [] # list to keep track of status of all servers
     for n in range(0, numOfServers):
-        server_status.append('Alive') # servers marked as live
+        server_status.append('Alive') # servers marked as alive
 
     for i in range(0, numOfServers):
         # sub-process/thread for each required server is started and added to servers list
@@ -129,5 +129,5 @@ if __name__ == "__main__":
                 server_status[kill] = 'Dead'
                 screen.addstr(numOfServers+3, 0, 'Server ' + str(kill+1) + ' killed...                          ')
             except IndexError:  # in event that server does not exist for inputted server
-                screen.addstr(numOfServers+3, 0, 'That server doesn\'t exist, try again                          ')
+                screen.addstr(numOfServers+3, 0, 'This server doesn\'t exist, please try again                          ')
         curses.napms(refresh_time*100)  # metrics window updated according to user input

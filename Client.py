@@ -35,21 +35,26 @@ output_location = args.outputLocation  # location of output video file
 serverIP = args.serverIP  # ip address of server to connect to
 resume = args.resume  # if true, interrupted download from server will be resumed, otherwise the whole segment for that server will be redownloaded
 
-for i in range(0, len(ports)):  # serverSize, downloadedSize arrays initialized for all known servers
+
+""" Initializing the download Size arrays and the server size arrays"""
+for i in range(0, len(ports)): 
     serverSize.append(0)
     downloadedSize.append(0)
 
 
-#### supplementary functions ####
-def checkPorts(ports):  # checks all known ports/servers, returns the ones that are live/working
+"""Function to check all known servers
+returns : Servers that are alive
+"""
+def checkPorts(ports):  
     while True:
         try:
-            livePorts = []  # array to store all ports/servers known to be working so far
+            livePorts = []  # array to store all servers known to be working so far
             for i in ports: # all known ports checked
                 check = socket(AF_INET,SOCK_STREAM)
-                result = check.connect_ex((serverIP,i))  # blank check message sent to each known server/port
-                if result == 0:  # if server/port is live/working
-                    livePorts.append(i) # known working port number appended to list
+                result = check.connect_ex((serverIP,i))  # blank check message sent to each known server
+                #if the server is alive then append it to the list of live ports
+                if result == 0:  
+                    livePorts.append(i) 
                 check.close()
                 time.sleep(0.1)
             break
@@ -57,8 +62,8 @@ def checkPorts(ports):  # checks all known ports/servers, returns the ones that 
             continue
     return livePorts
 
-# to automatically format evenly distributed byte requests based on given parameters to be sent to all required servers
-# formats headers in the following way: 'bytes=0-1023', where 0 is start and 1023 is end of byte range
+"""
+Functionailty:  formats headers in the following way: 'bytes=0-1023', where 0 is start and 1023 is end of byte range"""
 def formatHeaders(numOfServers,start,end):
     headers = [] # list to store all byte requests for current instance
     if start == 0: # in event of initial segmentation in main function
@@ -74,7 +79,11 @@ def formatHeaders(numOfServers,start,end):
     return headers # range requests returned
 
 
-def fileRecombining():  # recombines and removes all binary fragments, returns original '.mp4' file
+"""Recombination function
+Functionality: Recombines all binary segments and removes them
+Returns: the original ".mp4" file
+"""
+def fileRecombining():  
     with open(output_location, 'wb') as newFile: # output media file opened for writing into
         for i in range(0,numOfServers):  # all segments from initial segmentation taken in required order
             file = open(f"fileRecv{i}.bin", "rb")  # required binary file opened for reading
@@ -83,7 +92,11 @@ def fileRecombining():  # recombines and removes all binary fragments, returns o
             os.remove(f"fileRecv{i}.bin") # original binary file(portion) deleted to avoid redundancies and errors
 
 
-def cleanUp():  # function to remove any existing '.bin' files, if found, to avoid errors in current operation
+""" Cleanup fucntion
+Functionailty: remove any existing binary file 
+returns: Clean the directory ( Removes binary files)
+"""
+def cleanUp():  
     directory = './'  # current folder
     files_in_directory = os.listdir(directory) # list of all files in current folder taken
     filtered_files = [file for file in files_in_directory if file.endswith(".bin")] # files filtered out with '.bin' extension
@@ -218,13 +231,13 @@ for i in range(0,numOfServers): # threads for all available servers with appropr
 
 for x in threads:  # waiting for all threads to finish before file is recombined to avoid errors
     x.join()
-screen.addstr(len(ports) + 1, 0, 'Recombining file fragments...                                                            ')
+screen.addstr(len(ports) + 1, 0, 'File recombination in process..')
 end = True  # signaling metrics screen thread to exit
 screen.refresh()
 fileRecombining()  # fragments of file recombined into final mp4 file
 curses.napms(3000)
 curses.endwin()  # metrics window closed
 cleanUp()  # ran after code has been run to ensure all binary fragments have been removed
-input('File has been downloaded! Press Enter to exit...')
+input('The downloading process has finished. Please press Enter to exit..')
 
 
