@@ -86,8 +86,7 @@ def serverProcess(m):
             sck.close()
             continue
 
-
-#### main function ####
+"""Main Function"""
 if __name__ == "__main__":
     servers = []  # list to store and keep track of all server processes
     thread_input = ''  # used to kill servers with required command
